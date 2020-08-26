@@ -1,0 +1,27 @@
+`timescale 10ps/1fs
+module fullAdder (a, b, out, cin, cout);
+	input logic a, b, cin;
+	output logic out, cout;
+	logic [2:0] x;
+	
+	xor #5 xor1 (x[2], b, a);
+	xor #5 xor2 (out, w, cin);
+	and #5 and1 (x[0], a, b);
+	and #5 and2 (x[1], w, cin);
+	or  #5 or1  (cout, x[0], x[1]);
+endmodule
+
+module fullAdder_testbench();
+	logic a, b, out, Cin, Cout;
+	
+	fullAdder_1bit dut (.a, .b, .out, .Cin, .Cout);
+	
+	integer i;
+	
+	initial begin
+		for(i=0; i<8; i++) begin
+			{a, b, Cin} = i; #100;
+		end
+	end
+endmodule
+	

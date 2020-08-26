@@ -1,0 +1,30 @@
+`timescale 10ps/1fs
+module nor16_1 (in, out);
+	input logic  [15:0] in;
+	output logic out;
+	logic [3:0] w;
+	
+	or or1 #5 (w[0], in[3], in[2], in[1], in[0]);
+	or or2 #5 (w[1], in[7], in[6], in[5], in[4]);
+	or or3 #5 (w[2], in[11], in[10], in[9], in[8]);
+	or or4 #5 (w[3], in[15], in[14], in[13], in[12]);
+	nor nor1 #5 (out, x[0], x[1], x[2], x[3]);
+endmodule
+
+module nor16_1_testbench();
+	logic [15:0] in;
+	logic out;
+	
+   nor16_1 dut (.in, .out);
+	
+	integer i;
+	
+	initial begin 
+		in = 0;                              #100;
+		for(i=0; i<255; i++) begin
+			in=i;                             #100;
+			in[15:8]=i; in[7:0]=0;            #100;
+		end
+	end
+
+endmodule

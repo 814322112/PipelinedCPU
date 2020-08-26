@@ -1,0 +1,68 @@
+module controlLogic(clk);
+	input logic clk;
+	logic [63:0] instr;
+	logic [31:0] addr;
+	logic reg2loc, ALUSrc, RegWrite, MemWrite, BrTaken, UncondBr, ImmSel, IsBranch;
+	logic [2:0] ALUOP;
+	logic negative, zero;
+	logic [1:0] MemToReg;
+	
+	/*logic				write_enable;
+	logic				read_enable;
+	logic	[63:0]	write_data;
+	logic	[3:0]		xfer_size;
+	logic	[63:0]	read_data;*/
+	
+	parameter ADDI = 11'b1001000100x; //0x244
+	parameter ADDS = 11'b10101011000; //0x558
+	parameter B =    11'b000101xxxxx; //0x05
+	parameter BLT =  11'b0101010xxxx;
+	parameter BL =   11'b100101xxxxx;
+	parameter BR =   11'b11010110000; //6B0
+	parameter CBZ =  11'b10110100xxx;
+	parameter LDUR = 11'b11111000010; //7C2
+	parameter STUR = 11'b11111000000; //7C0
+	parameter SUBS = 11'b11101011000; //758
+	
+	parameter ALU_PASS_B=3'b000, ALU_ADD=3'b010, ALU_SUBTRACT=3'b011, ALU_AND=3'b100, ALU_OR=3'b101, ALU_XOR=3'b110;
+	
+	instructmem inst (.address(addr),.instruction(instr),.*);
+	//datamem data (.address(addr),.*);
+	
+	always_comb begin
+		casex(instr)
+			ADDI: {reg2loc, ALUSrc, MemToReg, RegWrite, MemWrite, BrTaken, UncondBr, ALUOP, ImmSel, IsBranch} = 
+			{8'b0100100X, ALU_ADD, 2'b10};
+			
+			ADDS: {reg2loc, ALUSrc, MemToReg, RegWrite, MemWrite, BrTaken, UncondBr, ALUOP, ImmSel, IsBranch} = 
+			{8'b1000100x, ALU_ADD, 2'bx0};
+			
+			B: {reg2loc, ALUSrc, MemToReg, RegWrite, MemWrite, BrTaken, UncondBr, ALUOP, ImmSel, IsBranch} =
+			{8'bxxxx0011, 3'bxxx, 2'bx0};
+			
+			BLT: {reg2loc, ALUSrc, MemToReg, RegWrite, MemWrite, BrTaken, UncondBr, ALUOP, ImmSel, IsBranch} = 
+			{6'b0xxx00, negative, 1'b0, 3'bxxx, 2'bx0};
+			
+			BL: {reg2loc, ALUSrc, MemToReg, RegWrite, MemWrite, BrTaken, UncondBr, ALUOP, ImmSel, IsBranch} =
+			{8'bxx101011, 3'bxxx, 2'bx0}; //may has problem, not sure
+			
+			BR: {reg2loc, ALUSrc, MemToReg, RegWrite, MemWrite, BrTaken, UncondBr, ALUOP, ImmSel, IsBranch} =
+			{8'b10xx00xx, 3'bxxx, 2'bx1};
+			
+			CBZ: {reg2loc, ALUSrc, MemToReg, RegWrite, MemWrite, BrTaken, UncondBr, ALUOP, ImmSel, IsBranch} =
+			{6'b00XX00, zero, 1'b0, 3'b000,2'bx0};
+			
+			LDUR: {reg2loc, ALUSrc, MemToReg, RegWrite, MemWrite, BrTaken, UncondBr, ALUOP, ImmSel, IsBranch} = 
+			{8'bx101100x, ALU_ADD, 2'b00};
+			
+			STUR: {reg2loc, ALUSrc, MemToReg, RegWrite, MemWrite, BrTaken, UncondBr, ALUOP, ImmSel, IsBranch} =
+			{8'b01xx010x, ALU_ADD, 2'b00};
+			
+			SUBS: {reg2loc, ALUSrc, MemToReg, RegWrite, MemWrite, BrTaken, UncondBr, ALUOP, ImmSel, IsBranch} =
+			{8'b1000100X, ALU_SUBTRACT, 2'bx0};
+			
+			default: {reg2loc, ALUSrc, MemToReg, RegWrite, MemWrite, BrTaken, UncondBr, ALUOP, ImmSel, IsBranch} = 
+			13'bx;
+		endcase
+	end
+endmodule 

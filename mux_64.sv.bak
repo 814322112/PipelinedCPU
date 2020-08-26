@@ -1,0 +1,11 @@
+module mux64(in, out, sel);
+	input logic sel;
+	input logic [63:0] in;
+	output logic [63:0] out;
+	
+	genvar i;
+	generate
+		for (i = 0; i < 64; i++)
+			
+	endgenerate
+endmodule

@@ -1,0 +1,51 @@
+`timescale 10ps/1fs
+module register(datain,dataout,clk,writeen);
+	input logic [63:0] datain;
+	output logic [63:0] dataout;
+	input logic clk, writeen;
+	logic [63:0] dffout;
+	
+	genvar i;
+	generate
+	   for (i = 0;i < 64;i++) begin : eachDff
+			mux2_1 m21 (.in({datain[i],dataout[i]}), .sel(writeen), .out(dffout[i]));
+			D_FF dffs (.q(dataout[i]),.d(dffout[i]),.clk,.reset(1'b0));
+		end
+	endgenerate
+endmodule
+
+module register_Testbench();
+	logic [63:0] datain;
+	logic [63:0] dataout;
+	logic clk, writeen;
+	
+	register dut (.*);
+	
+	parameter CLOCK_PERIOD=100;
+	initial begin
+	   clk<= 0;
+		forever #(CLOCK_PERIOD/2) clk <= ~clk;
+	end
+	
+	initial begin
+	 writeen <= 0; datain <= 56'd8; @(posedge clk);
+	 @(posedge clk);
+	 writeen <= 1;@(posedge clk);
+	 @(posedge clk);
+	 datain <= 56'd59;@(posedge clk);
+	 @(posedge clk);
+	 @(posedge clk);
+	 @(posedge clk);
+	 writeen <= 0;@(posedge clk);
+	 @(posedge clk);
+	 datain <= 56'd810;@(posedge clk);
+	 @(posedge clk);
+	 datain <= 56'd114514;@(posedge clk);
+	 @(posedge clk);
+	 writeen <= 1;@(posedge clk);
+	 @(posedge clk);
+	 @(posedge clk);
+	 @(posedge clk);
+	$stop;
+	end
+endmodule

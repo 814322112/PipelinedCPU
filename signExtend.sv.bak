@@ -1,0 +1,4 @@
+module signExtend (in, out);
+	parameter width = 9;
+	input logic in;
+	output logic out;

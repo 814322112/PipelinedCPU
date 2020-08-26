@@ -1,0 +1,14 @@
+`timescale 10ps/1fs
+module register (in, clk, out);
+	input logic [63:0] in;
+	input logic clk;
+	output logic [63:0] out;
+
+	genvar i;
+	
+	generate 
+		for (i = 0; i < 64; i++) begin : gen1
+			D_FF register1 (.q(out[i]), .d(in[i]), .reset(reset), .clk(clk));
+		end
+	endgenerate 
+endmodule

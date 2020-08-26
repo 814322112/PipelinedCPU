@@ -1,0 +1,7 @@
+module mux10_5(in, sel, out);
+	input logic [4:0] in;
+	output logic [4:0] out;
+	input logic sel;
+	
+	
+endmodule

@@ -1,0 +1,16 @@
+module alu_1 (a, b, Cin, Cout, con);
+		input logic [2:0] sel;
+		input logic a, b, cin;
+		output logic Cout;
+		logic [3:0] w;
+		logic negB, outB;
+		
+		and #5 and1 (w[0], a, b);
+		or  #5 or1  (w[1], a, b);
+		xor #5 xor1 (w[2], a, b);
+		not #5 not1 (negB, b);
+		
+		mux2_1 mux21   (.in(negB, b), .sel(sel[0]), .out(outB));
+		fullAdder add1 (.a, .b(outB), .out(w[3]), .Cin, .Cout);
+		mux4_1 mux41   (.in(w[3:0]), .sel(sel[2:1]), .out(Cout));
+endmodule

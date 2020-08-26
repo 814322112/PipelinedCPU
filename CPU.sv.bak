@@ -1,0 +1,108 @@
+module cpu (clk, reset);
+	input logic clk, reset;
+	logic [63:0] Da, Db, Dw, addr, regularAddr, branchAddr, newPC, aluUse, aluResult, BrMux, dataMemOut;
+	logic [31:0] instruction;
+	logic [10:0] instr;
+	logic [11:0] imm_12;
+	logic [25:0] imm_26;
+	logic [18:0] imm_19;
+	logic [15:0] imm_16;
+	logic [8:0]  daddr9;
+	logic [4:0]  Rd, Rm, Rn, Aa, Ab, Aw;
+	logic [5:0] shamt;
+	logic MemWrite, reg2loc, reg3loc, ALUSrc,UncondBr,BrTaken,read_enable,RegWrite,ImmSel,IsBranch,flagSet;
+	logic [3:0] xfer_size;
+	logic negative, zero, overflow, carry_out;
+	logic negative_reg, overflow_reg, zero_reg, carry_out_reg;
+	
+	logic [63:0] imm26_xtd,imm_26_sft, imm12_xtd, daddr_xtd, postShiftB,bToAddr, daddr9_xtd, imm19_xtd, altBInput;
+	logic [2:0] ALUOP;
+	logic [1:0] MemToReg;
+
+	
+	/************Instructmem*************/
+	instructmem inst (.address(addr),.*);
+	//Assign variable
+	assign Rd       = 	  instruction[4:0];
+	assign Rn       = 	  instruction[9:5];
+	assign Rm       = 	  instruction[20:16];
+	assign instr    = 	  instruction[31:21];
+	assign shamt    =  	  instruction[15:10];
+	assign imm_12    =  	  instruction[21:10];
+	assign daddr9   = 	  instruction[20:12];
+	assign imm_16   =      instruction[20:5];
+	assign imm_26   =      instruction[25:0];
+	assign imm_19   =      instruction[23:5];
+	
+	/**************Control Logic***************/
+	controlLogic ctrl (.negative(negative_reg),.overflow(overflow_reg),.zero(zero_reg),.*);
+	
+
+	/************Regfile************/
+	regfile regf (.ReadData1(Da), .ReadData2(Db), .WriteData(Dw), 
+					.ReadRegister1(Rn), .ReadRegister2(Ab), .WriteRegister(Aw),.*);
+	
+	/************DataMem************/
+	datamem dataMemory (.address(aluResult), .write_enable(MemWrite), .read_enable(1'b1), .write_data(Db), 
+	.clk(clk), .xfer_size(4'b1000), .read_data(dataMemOut));
+	
+	//mux128_64 datamemMUX (.one_input(dataMemOut), .zero_input(aluResult), .sel(MemToReg), .out(Dw));	
+	
+	/************Muxes***********/
+	
+	mux128_64 mux1 (.one_input(branchAddr), .zero_input(regularAddr), .sel(BrTaken), .out(newPC));
+	//mux128_64 mux2 (.one_input(Db), .zero_input(BrMux), .sel(IsBranch), .out(newPC));
+	mux128_64 mux3 (.one_input(imm12_xtd), .zero_input(daddr9_xtd), .sel(ImmSel), .out(altBInput)); 
+	mux4_1_64 mux4 (.in1(aluResult),.in2(dataMemOut),.in3(regularAddr),.in4(64'b0),.sel(MemToReg),.out(Dw));
+	mux5bit mux5 (.in1(Rm),.in2(Rd),.sel(reg2loc),.out(Ab));
+	mux128_64 alusrcMUX (.one_input(altBInput), .zero_input(Db), .sel(ALUSrc), .out(aluUse));
+	mux5bit mux6 (.in1(5'd30),.in2(Rd),.sel(reg3loc),.out(Aw));
+	mux128_64 brSelect (.one_input(imm26_xtd), .zero_input(imm19_xtd), .sel(UncondBr), .out(postShiftB));
+	
+	/**************ALU**************/
+	alu_64 alu1 (.A(Da), .B(aluUse), .cntrl(ALUOP), .result(aluResult), .*);
+	fullAdder_64 adder1 (.a(addr), .b(64'h0000000000000004), .out(regularAddr));
+	fullAdder_64 adder2 (.a(addr), .b(bToAddr), .out(branchAddr));
+	
+	
+	/***********Registers**********/
+	
+	register reg1 (.datain(negative),.dataout(negative_reg),.clk,.writeen(flagSet));
+	register reg2 (.datain(overflow),.dataout(overflow_reg),.clk,.writeen(flagSet));
+	register reg3 (.datain(zero),.dataout(zero_reg),.clk,.writeen(flagSet));
+	register reg4 (.datain(carry_out),.dataout(carry_out_reg),.clk,.writeen(flagSet));
+	register2 pc (.in(newPC), .clk(clk), .out(addr), .reset(reset));
+
+	/************SignExtend**********/
+	
+	bit26to64 SE1 (.Rin(imm_26),.Rout(imm26_xtd));
+	bit19to64 SE5 (.Rin(imm_19),.Rout(imm19_xtd));
+	bit12to64 SE2(.Rin(imm_12),.Rout(imm12_xtd));
+	bit9to64 SE3 (.Rin(daddr9),.Rout(daddr9_xtd));
+	shifter shift (.value(postShiftB), .direction(1'b0), .distance(6'b000010), .result(bToAddr));
+	
+endmodule
+
+`timescale 1ns/10ps
+
+module cpu_testbench(); 		
+	parameter ClockDelay = 20;
+	logic  clk, reset;
+	integer i;
+
+	cpu dut (.clk, .reset);
+	initial begin
+		clk <= 0;
+		forever #(ClockDelay/2) clk <= ~clk;
+	end
+	
+	initial begin
+		reset = 1; 							@(posedge clk);
+	   reset = 0; 							@(posedge clk);
+												@(posedge clk);
+		for (i=0; i<1000; i++) begin
+												@(posedge clk);
+		end
+		$stop;
+	end
+endmodule

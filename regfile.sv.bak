@@ -1,0 +1,18 @@
+module regfile(ReadData1, ReadData2, WriteData, ReadRegister1, ReadRegister2, WriteRegister,
+					                                                               RegWrite, clk);
+	input logic	[4:0] 	ReadRegister1, ReadRegister2, WriteRegister;
+	input logic [63:0]	WriteData;
+	input logic 			RegWrite, clk;
+	output logic [63:0]	ReadData1, ReadData2;
+	logic [63:0][31:0]   w;
+	logic [31:0]         decoderR;
+	
+	d5_32_decoder Decoder (.in(WriteRegister[4:0]), .out(decoderR[31:0]), .en(RegWrite));
+	mux32_64 mux1 (.in(w), .sel(ReadRegister1[4:0]), .out(REadData1));
+	mux32_64 mux2 (.in(w), .sel(ReadRegister2[4:0]), .out(REadData2));
+	
+	integer i;
+	always_comb begin
+		for (i = 0; i < 64; i++) 
+			w[i][31] = 0;
+	end
